@@ -1,6 +1,24 @@
 <?php
+/*
+ * Project: Frieren Nmap Module
+ * Based on Frieren Framework Template Module and other Frieren modules
+ * Original Copyright (C) 2023 DSR! <xchwarze@gmail.com>
+ * Modifications and new code by m5kro <m5kro@proton.me>, 2024
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ * More info at: https://github.com/xchwarze/frieren
+ *
+ * Original code from Frieren Framework is distributed under the terms of the
+ * GNU Lesser General Public License (LGPL) version 3 or later. You should have received
+ * a copy of the LGPL-3.0-or-later along with this project. If not, see <https://www.gnu.org/licenses>.
+ * 
+ * Modifications: Added functions to manage Nmap scans, including starting and stopping scans, 
+ * checking status, and managing scan history.
+ */
 
 namespace frieren\modules\nmap;
+
+use frieren\helper\OpenWrtHelper;
 
 class NmapController extends \frieren\core\Controller
 {
@@ -14,6 +32,7 @@ class NmapController extends \frieren\core\Controller
         'startScan',
         'stopScan',
         'getHistory',
+        'getHistoryContent',
         'getLogContent',
         'deleteHistory',
         'moduleStatus',
@@ -28,24 +47,20 @@ class NmapController extends \frieren\core\Controller
         $filename = date('Y-m-d\TH-i-s') . '.log';
         $logFilePath = "{$this->nmapDirectory}/{$filename}";
         $command = escapeshellcmd($this->request['command']);
-        
-        // Run Nmap scan with output to /tmp/nmap.log, then copy to /root/.nmap/
-        exec("nmap {$command} -oN {$this->logPath} 2>&1", $output, $resultCode);
-        if ($resultCode !== 0) {
-            return self::setError('Failed to start scan');
-        }
-        exec("cp {$this->logPath} {$logFilePath}");
+
+        // Run Nmap asynchronously and write output to /root/.nmap/ and /tmp/nmap.log
+        OpenWrtHelper::execBackground("nmap {$command} -oN {$logFilePath}", "{$this->logPath} 2>&1");
 
         return self::setSuccess([
-            'outputFile' => $filename,
+            'outputFile' => $filename
         ]);
     }
 
     public function stopScan()
     {
-        exec('killall -9 nmap');
+        OpenWrtHelper::exec('killall -9 nmap');
         return self::setSuccess([
-            'success' => shell_exec('pgrep nmap') === null,
+            'success' => !OpenWrtHelper::checkRunning('nmap')
         ]);
     }
 
@@ -59,6 +74,27 @@ class NmapController extends \frieren\core\Controller
         return self::setSuccess(['files' => array_values($files)]);
     }
 
+    public function getHistoryContent()
+    {
+        if (!isset($this->request['filename'])) {
+            return self::setError('No filename provided');
+        }
+
+        $filename = $this->request['filename'];
+        $filePath = "{$this->nmapDirectory}/{$filename}";
+
+        if (!file_exists($filePath)) {
+            return self::setError("File not found: {$filePath}");
+        }
+
+        $logContent = file_get_contents($filePath);
+
+        return self::setSuccess([
+            'filename' => $filename,
+            'logContent' => $logContent,
+        ]);
+    }
+
     public function getLogContent()
     {
         if (!file_exists($this->logPath)) {
@@ -66,8 +102,8 @@ class NmapController extends \frieren\core\Controller
         }
 
         return self::setSuccess([
-            'isRunning' => file_exists($this->logPath) && shell_exec('pgrep nmap') !== null,
-            'logContent' => file_get_contents($this->logPath),
+            'isRunning' => OpenWrtHelper::checkRunning('nmap'),
+            'logContent' => file_get_contents($this->logPath)
         ]);
     }
 
@@ -91,8 +127,7 @@ class NmapController extends \frieren\core\Controller
         }
 
         return self::setSuccess([
-            'hasDependencies' => shell_exec('which nmap') !== null,
-            'isRunning' => file_exists($this->logPath) && shell_exec('pgrep nmap') !== null,
+            'isRunning' => false,
         ]);
     }
 }

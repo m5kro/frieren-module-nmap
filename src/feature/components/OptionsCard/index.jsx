@@ -1,3 +1,19 @@
+/*
+ * Project: Frieren Nmap Module
+ * Based on Frieren Framework Template Module and other Frieren modules
+ * Original Copyright (C) 2023 DSR! <xchwarze@gmail.com>
+ * Modifications and new code by m5kro <m5kro@proton.me>, 2024
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ * More info at: https://github.com/xchwarze/frieren
+ *
+ * Original code from Frieren Framework is distributed under the terms of the
+ * GNU Lesser General Public License (LGPL) version 3 or later. You should have received
+ * a copy of the LGPL-3.0-or-later along with this project. If not, see <https://www.gnu.org/licenses>.
+ * 
+ * Modifications: Added options to manage Nmap scans, including Nmap related command options.
+ */
+
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { useAtomValue } from 'jotai';
@@ -7,8 +23,8 @@ import PropTypes from 'prop-types';
 import PanelCard from '@src/components/PanelCard';
 import Button from '@src/components/Button';
 import FormProvider from '@src/components/Form/FormProvider';
-import SelectField from '@src/components/Form/SelectField';
 import SwitchField from '@src/components/Form/SwitchField';
+import SelectField from '@src/components/Form/SelectField';
 import SubmitButton from '@src/components/Form/SubmitButton';
 import isRunningAtom from '@module/feature/atoms/isRunningAtom.js';
 import useStartScan from '@module/feature/hooks/startScan.js';
@@ -29,7 +45,7 @@ const OptionsCard = ({ statusQuery }) => {
     const defaultValues = {
         command: '',
         target: '',
-        verbose: '',
+        verbose: false,
         osDetection: false,
         serviceVersion: false,
         traceroute: false,
@@ -48,15 +64,6 @@ const OptionsCard = ({ statusQuery }) => {
                         <CommandInput label={'Command'} placeholder={'Enter Nmap command'} />
                         <InputField name={'target'} label={'Target'} placeholder={'Enter target'} />
                         <SelectField
-                            name={'verbose'}
-                            label={'Verbosity'}
-                            options={[
-                                { value: '', label: 'Default' },
-                                { value: '-v', label: 'Verbose' },
-                                { value: '-vv', label: 'Very verbose' },
-                            ]}
-                        />
-                        <SelectField
                             name={'timing'}
                             label={'Timing (-T value)'}
                             options={[
@@ -73,6 +80,7 @@ const OptionsCard = ({ statusQuery }) => {
 
                     <Col md={6} className={'mt-4'}>
                         <p className={'fw-bold fs-5 mb-3'}>Advanced Options</p>
+                        <SwitchField name={'verbose'} label={'Verbose'} />
                         <SwitchField name={'osDetection'} label={'OS Detection'} />
                         <SwitchField name={'serviceVersion'} label={'Service Version'} />
                         <SwitchField name={'traceroute'} label={'Traceroute'} />

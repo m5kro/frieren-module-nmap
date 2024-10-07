@@ -1,3 +1,19 @@
+/*
+ * Project: Frieren Nmap Module
+ * Based on Frieren Framework Template Module and other Frieren modules
+ * Original Copyright (C) 2023 DSR! <xchwarze@gmail.com>
+ * Modifications and new code by m5kro <m5kro@proton.me>, 2024
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ * More info at: https://github.com/xchwarze/frieren
+ *
+ * Original code from Frieren Framework is distributed under the terms of the
+ * GNU Lesser General Public License (LGPL) version 3 or later. You should have received
+ * a copy of the LGPL-3.0-or-later along with this project. If not, see <https://www.gnu.org/licenses>.
+ * 
+ * Modifications: Modified functions to work with Nmap module log format and properly read logs.
+ */
+
 import React, { useState } from 'react';
 import Table from 'react-bootstrap/Table';
 import PanelCard from '@src/components/PanelCard';
@@ -10,7 +26,7 @@ const HistoryCard = () => {
     const query = useGetHistory();
     const { mutate: deleteHistory, isPending: deleteHistoryRunning } = useDeleteHistory();
     const [selectedFile, setSelectedFile] = useState(null);
-    const { data: fileContent, isLoading: isLoadingContent } = useGetHistoryContent(selectedFile);
+    const { data: fileContentData, isLoading: isLoadingContent } = useGetHistoryContent(selectedFile);
     const { data, isSuccess } = query;
 
     const handleOpenClick = (item) => {
@@ -20,6 +36,10 @@ const HistoryCard = () => {
     const handleDeleteClick = (item) => {
         deleteHistory({ filename: item });
     };
+
+    const files = data?.files || [];
+
+    const logContent = fileContentData?.logContent;
 
     return (
         <PanelCard title={'History'} query={query}>
@@ -33,8 +53,8 @@ const HistoryCard = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {data.length > 0 ? (
-                                data.map((item, index) => (
+                            {files.length > 0 ? (
+                                files.map((item, index) => (
                                     <tr key={index}>
                                         <td>{item}</td>
                                         <td>
@@ -68,7 +88,7 @@ const HistoryCard = () => {
                             {isLoadingContent ? (
                                 <p>Loading content...</p>
                             ) : (
-                                <pre>{fileContent || 'No content available.'}</pre>
+                                <pre>{logContent || 'No content available.'}</pre>
                             )}
                         </div>
                     )}
